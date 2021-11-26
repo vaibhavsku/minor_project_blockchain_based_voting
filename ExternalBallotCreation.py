@@ -25,17 +25,14 @@ def start():
         month = int(input("Enter ballot expiration month : "))
         day = int(input("Enter ballot expiration day : "))
         hour = int(input("Enter ballot expiration hour : "))
-        ballot_expiration_date = int(datetime.datetime(year, month, day, hour).timestamp())
+        ballot_expiration_date = int(datetime.datetime(year, month, day, hour).replace(tzinfo=datetime.timezone.utc).timestamp())
         ballot_creation_date = datetime.datetime.utcnow()
         numCandidates = int(input("Enter number of canditates to be contested from this ballot : "))
         for c in range(0, numCandidates):
             candidateName = input(f"Enter name of candidate {c+1} : ")
             candidates.append(candidateName)
-        print(ballot_name)
-        print(ballot_id)
-        print(ballot_expiration_date)
-        print(ballot_creation_date)
-        print(candidates)
+        contract_id = deploy(ballot_name, ballot_expiration_date, candidates)
+        addToDB(ballot_id,ballot_name,ballot_creation_date, contract_id, ballot_expiration_date)
 
 def infoMessage(receipt):
     t_hash,source,destination,exitcode,totalGas = receipt["transactionHash"],receipt["from"],receipt["to"],receipt["status"],receipt["cumulativeGasUsed"]
@@ -84,6 +81,8 @@ def deploy(ballotname, ballotendDate, ballotOptions):
 
     #Now load the ballotoptions into our smart contract
 
+    print("Now, adding ballot options")
+
     c1 = blockchain.eth.contract(smartcontract_address, abi=abi)
     
     for b in ballotOptions:
@@ -97,12 +96,24 @@ def deploy(ballotname, ballotendDate, ballotOptions):
     #Finalize voting options
     nonce = nonce+1
     t2 = c1.functions.finalizeVotingOptions().buildTransaction({"chainId":network_id, "gasPrice": blockchain.eth.gas_price, "from":registrar_address, "nonce":nonce})
-    s_t2 = blockchain.eth.send_transaction(t2, registrar_signature)
+    s_t2 = blockchain.eth.account.sign_transaction(t2, registrar_signature)
     t2_hash = blockchain.eth.send_raw_transaction(s_t2.rawTransaction)
     t2_receipt = blockchain.eth.wait_for_transaction_receipt(t2_hash)
     infoMessage(t2_receipt)
 
+    print("Ballot options finalized on this ballot contract")
+
     return smartcontract_address
+
+def addToDB(ballot_id, ballot_name, ballot_creation_date, contract_id, ballot_end_date):
+    with psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST) as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+            #cur.execute("CREATE TABLE ballotinfo (ballot_id INT, ballot_name VARCHAR NOT NULL, ballot_creation_time TIMESTAMP NOT NULL, ballot_contract_id VARCHAR NOT NULL, ballot_end_date BIGINT NOT NULL, PRIMARY KEY (ballot_id));")
+            cur.execute("INSERT INTO ballotinfo (ballot_id,ballot_name,ballot_creation_time,ballot_contract_id,ballot_end_date) VALUES(%s, %s, %s, %s, %s);", (ballot_id, ballot_name,ballot_creation_date,contract_id,ballot_end_date))
+            conn.commit()
+
+
+
     
     
     
@@ -110,8 +121,9 @@ def deploy(ballotname, ballotendDate, ballotOptions):
    
 
 
-#start()
-deploy("Demo 1", 1637901000, ["A1", "A2", "A3"])
+start()
+#deploy("Demo 1", 1637901000, ["A1", "A2", "A3"])
+
 
 
 
