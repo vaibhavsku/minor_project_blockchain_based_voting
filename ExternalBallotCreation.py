@@ -37,6 +37,12 @@ def start():
         print(ballot_creation_date)
         print(candidates)
 
+def infoMessage(receipt):
+    t_hash,source,destination,exitcode,totalGas = receipt["transactionHash"],receipt["from"],receipt["to"],receipt["status"],receipt["cumulativeGasUsed"]
+    print(f"Transaction {t_hash} from {source} to {destination} exited with {exitcode} . Total gas used for this transaction is {totalGas}")
+
+
+
 def deploy(ballotname, ballotendDate, ballotOptions):
     # with open("./ETHVoteBallot.sol", "r") as file:
     #     voting_contract = file.read()
@@ -72,22 +78,31 @@ def deploy(ballotname, ballotendDate, ballotOptions):
     tx_receipt = blockchain.eth.wait_for_transaction_receipt(tx_hash)
 
     #get address of the deployed contract
-    smartcontract_address = tx_receipt.contractAddress
-    print(smartcontract_address)
+    smartcontract_address = tx_receipt["contractAddress"]
+    gUsed = tx_receipt["cumulativeGasUsed"]
+    print(f"Contract successfully deployed with address {smartcontract_address} and gas used is {gUsed}")
 
     #Now load the ballotoptions into our smart contract
+
+    c1 = blockchain.eth.contract(smartcontract_address, abi=abi)
     
     for b in ballotOptions:
         nonce = nonce + 1
-        c1 = blockchain.eth.contract(smartcontract_address, abi=abi)
         t1 = c1.functions.addVotingOption(b).buildTransaction({"chainId":network_id, "gasPrice": blockchain.eth.gas_price, "from":registrar_address, "nonce":nonce})
         s_t1 = blockchain.eth.account.sign_transaction(t1, registrar_signature)
         t1_hash = blockchain.eth.send_raw_transaction(s_t1.rawTransaction)
         t1_receipt = blockchain.eth.wait_for_transaction_receipt(t1_hash)
-        print(t1_receipt)
+        infoMessage(t1_receipt)
+       
+    #Finalize voting options
+    nonce = nonce+1
+    t2 = c1.functions.finalizeVotingOptions().buildTransaction({"chainId":network_id, "gasPrice": blockchain.eth.gas_price, "from":registrar_address, "nonce":nonce})
+    s_t2 = blockchain.eth.send_transaction(t2, registrar_signature)
+    t2_hash = blockchain.eth.send_raw_transaction(s_t2.rawTransaction)
+    t2_receipt = blockchain.eth.wait_for_transaction_receipt(t2_hash)
+    infoMessage(t2_receipt)
 
-
-    #return smartcontract_address
+    return smartcontract_address
     
     
     
