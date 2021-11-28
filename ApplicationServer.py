@@ -164,6 +164,4 @@ start()
 
 
 
-# print(authentication("bc5cdb9a-5e7a-4f1b-a14c-ec2bf932ff44", "63e9fcad4a4bd0eab187999f9e23300d"))
-#writePrivateBallotKey(22)
-start()
+
