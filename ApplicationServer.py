@@ -3,7 +3,7 @@ import uuid
 import psycopg2
 import psycopg2.extras
 psycopg2.extras.register_uuid()
-from utilityFunctions.utilityFunctions import readPublicBallotKey, signedKey, writePrivateBallotKey, verifySignedKey
+from utilityFunctions.utilityFunctions import readPublicBallotKey, signedKey
 from random import SystemRandom
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
@@ -36,8 +36,8 @@ def infoMessage(receipt):
     print(f"Transaction {t_hash} from {source} to {destination} exited with {exitcode} . Total gas used for this transaction is {totalGas}")
 
 def authorize_user_to_vote(e_ID, c_ID):
-    registrar_address = "0x128aCF37F0fE8F92791ED153e29Dbf2B22F09dC9"
-    registrar_signature = "0xe01396930d399e05781dc28de10b5274b6ddb85c59cc80644842cdcc923a26df" #Unsafe for demo purposes only. Never expose private key of your account
+    registrar_address = "0x5aB6213f9e861E68Ae69862770716E408273B376"
+    registrar_signature = "3ab8e51f02c09b44d71f097c51209afe660cde34567ab0770ad03adfde439a7e" #Unsafe for development purposes only. Never expose private key of your account
     smc = blockchain.eth.contract(c_ID,abi=getSmartContract()[1])
     nonce = blockchain.eth.getTransactionCount(registrar_address)
     transaction = smc.functions.giveRightToVote(e_ID).buildTransaction({"chainId":network_id, "gasPrice": blockchain.eth.gas_price, "from":registrar_address, "nonce":nonce})
@@ -46,6 +46,7 @@ def authorize_user_to_vote(e_ID, c_ID):
     tx_receipt = blockchain.eth.wait_for_transaction_receipt(tx_hash)
     infoMessage(tx_receipt)
     
+    
 
 def user_vote(e_ID, c_ID):
     smc = blockchain.eth.contract(c_ID,abi=getSmartContract()[1])
@@ -53,7 +54,7 @@ def user_vote(e_ID, c_ID):
     num_of_candidates = smc.functions.getVotingOptionsLength().call()
     print(f"Your ballot name is {ballot_name}")
     print("The candidates for the election are as follows : ")
-    for i in (0, num_of_candidates):
+    for i in range(0, num_of_candidates):
         optionName = smc.functions.getVotingOptionsName(i).call()
         print(f"Index : {i} Candidate Name: {optionName}")
     optionIndex = int(input("Enter the index for the candidate you want to vote : "))
@@ -83,7 +84,10 @@ def onlineAccountVerifier_sign_token(user_id, ballot_id, blind_token):
     with psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST) as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
             cur.execute("SELECT ballot_id FROM registeredvoterballots WHERE voter_id = %s;", [uuid.UUID(user_id)])
-            voter_ballots = cur.fetchall()
+            fetch_query1 = cur.fetchall()
+            voter_ballots = []
+            for i in range(0, len(fetch_query1)):
+                voter_ballots.append(fetch_query1[i][0])
             if (ballot_id not in voter_ballots):
                 raise RuntimeError("Entered ballotID does not exist in the database")
             cur.execute("SELECT voter_id FROM ballot_token_requests WHERE voter_id = %s;", [uuid.UUID(user_id)])
@@ -99,7 +103,7 @@ def onlineAccountVerifier_sign_token(user_id, ballot_id, blind_token):
 def onlineAccountVerifier_register_vote(ethereumID, ballot_id, signed_key, key):
     with psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST) as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
-            public_ballot_key = serialization.load_pem_public_key(readPublicBallotKey(22))
+            public_ballot_key = serialization.load_pem_public_key(readPublicBallotKey(ballot_id))
             rsa_key = rsa_construct(public_ballot_key.public_numbers()._n, public_ballot_key.public_numbers()._e)
             if not rsa_key._verify(key, signed_key):
                 raise RuntimeError("Invalid signed_key")
@@ -125,7 +129,7 @@ def start():
     ballot_id = int(input("Enter your ballot id : "))
     authentication(user_id, passwd)
     key = int(secrets.token_hex(16), 16)
-    public_ballot_key = serialization.load_pem_public_key(readPublicBallotKey(22))
+    public_ballot_key = serialization.load_pem_public_key(readPublicBallotKey(ballot_id))
     r_number = SystemRandom().randrange(public_ballot_key.public_numbers()._n >> 10, public_ballot_key.public_numbers()._n)
     rsa_key = rsa_construct(public_ballot_key.public_numbers()._n, public_ballot_key.public_numbers()._e)
     blindkey = rsa_key._blind(key, r_number)
@@ -139,6 +143,9 @@ def start():
 
 
 start()
+#onlineAccountVerifier_sign_token("8b034ceb-b4fe-4b17-90eb-ca846101bb4b", 1151, 0)
+#authorize_user_to_vote("0xDDa005ccE9a3cb060e899fc34346f70f1E2A172E", "0xe769BF8AbC0F639CDE4b5bce69502000bB20a87E")
+
 
    
 
@@ -161,7 +168,3 @@ start()
 
 
             
-
-
-
-
