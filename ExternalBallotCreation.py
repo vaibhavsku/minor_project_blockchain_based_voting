@@ -4,6 +4,7 @@ from web3 import Web3
 import json
 import psycopg2
 import psycopg2.extras
+from utilityFunctions.utilityFunctions import writePrivateBallotKey
 
 
 DB_HOST = "127.0.0.1"
@@ -25,7 +26,7 @@ def start():
         month = int(input("Enter ballot expiration month : "))
         day = int(input("Enter ballot expiration day : "))
         hour = int(input("Enter ballot expiration hour : "))
-        ballot_expiration_date = int(datetime.datetime(year, month, day, hour).replace(tzinfo=datetime.timezone.utc).timestamp())
+        ballot_expiration_date = int(datetime.datetime(year, month, day, hour).timestamp())
         ballot_creation_date = datetime.datetime.utcnow()
         numCandidates = int(input("Enter number of canditates to be contested from this ballot : "))
         for c in range(0, numCandidates):
@@ -33,10 +34,11 @@ def start():
             candidates.append(candidateName)
         contract_id = deploy(ballot_name, ballot_expiration_date, candidates)
         addToDB(ballot_id,ballot_name,ballot_creation_date, contract_id, ballot_expiration_date)
+        writePrivateBallotKey(ballot_id)
 
 def infoMessage(receipt):
     t_hash,source,destination,exitcode,totalGas = receipt["transactionHash"],receipt["from"],receipt["to"],receipt["status"],receipt["cumulativeGasUsed"]
-    print(f"Transaction {t_hash} from {source} to {destination} exited with {exitcode} . Total gas used for this transaction is {totalGas}")
+    print(f"Transaction {str(t_hash)} from {source} to {destination} exited with {exitcode} . Total gas used for this transaction is {totalGas}")
 
 
 
@@ -62,8 +64,8 @@ def deploy(ballotname, ballotendDate, ballotOptions):
     abi = compiled_sol["contracts"]["ETHVoteBallot.sol"]["ETHVoteBallot"]["abi"]
     blockchain = Web3(Web3.HTTPProvider("http://127.0.0.1:7545"))
     network_id = 1337
-    registrar_address = "0x128aCF37F0fE8F92791ED153e29Dbf2B22F09dC9"
-    registrar_signature = "0xe01396930d399e05781dc28de10b5274b6ddb85c59cc80644842cdcc923a26df" #unsafe only for development purposes. Never share or hardcode your private key
+    registrar_address = "0x5aB6213f9e861E68Ae69862770716E408273B376"
+    registrar_signature = "3ab8e51f02c09b44d71f097c51209afe660cde34567ab0770ad03adfde439a7e" #unsafe only for development purposes. Never share or hardcode your private key
     smartcontract = blockchain.eth.contract(abi = abi, bytecode=bytecode)
 
     #First get the latest transaction number of the id
