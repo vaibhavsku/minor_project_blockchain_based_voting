@@ -107,14 +107,14 @@ def onlineAccountVerifier_register_vote(ethereumID, ballot_id, signed_key, key):
             rsa_key = rsa_construct(public_ballot_key.public_numbers()._n, public_ballot_key.public_numbers()._e)
             if not rsa_key._verify(key, signed_key):
                 raise RuntimeError("Invalid signed_key")
-            cur.execute("SELECT signed_token_hash FROM ballot_token_registration WHERE signed_token_hash = %s;", (hex(signed_key)))
+            cur.execute("SELECT signed_token_hash FROM ballot_token_registration WHERE signed_token_hash = %s;", [hex(signed_key)])
             res = cur.fetchall()
             if(len(res) > 0):
                 raise RuntimeError("This token alread exists in the database")
             creation_date = datetime.datetime.utcnow()
             cur.execute("INSERT INTO ballot_token_registration(signed_token_hash, voter_address, ballot_id, created_on) VALUES(%s, %s, %s, %s);", (hex(signed_key), ethereumID, ballot_id, creation_date))
             conn.commit()
-            cur.execute("SELECT ballot_contract_id FROM ballotinfo WHERE ballot_id = %s;", (ballot_id))
+            cur.execute("SELECT ballot_contract_id FROM ballotinfo WHERE ballot_id = %s;", [ballot_id])
             res = cur.fetchall()
             b_contract_id = res[0][0]
             authorize_user_to_vote(ethereumID, b_contract_id)
