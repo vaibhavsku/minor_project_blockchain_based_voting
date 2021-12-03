@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="{{url_for('static', filename='stylesheets/stylesheet1.css')}}">
+  </head>
+<body>
+  <script src="{{url_for('static', filename='scripts/script1.js')}}"></script> 
+  <div class="wrapper fadeInDown">
+  <div id="formContent">
+    <h2 class="active" id="heading">Cast Vote</h2>
+    <div class="fadeIn first">
+      <img src="https://img.icons8.com/external-justicon-lineal-justicon/64/000000/external-voting-voting-justicon-lineal-justicon.png" type="icon" id="page_image"/>
+      </div>
+   <p id="t1">Choose the ballot to cast your vote to</p>
+
+   <SELECT id="ballotList" onchange="ballotOption()">
+    <option>--SELECT--</option>
+   {% for j in ballots %}
+	<OPTION value={{j[0]}}>{{j[1]}}</OPTION>
+  {% endfor %}
+  </SELECT>
+
+   <p id="t2">Choose the candidate from the ballot</p>
+
+   <SELECT id="candidateList" onchange="votingOption()" disabled>
+   </SELECT> 
+
+   <p id="b_selected">Ballot selected :</p>
+
+   <p id="c_selected">Candidate selected :</p>
+   
+   <input type="password" id="ethPrivKey" placeholder="Enter the private key of your Ethereum wallet">   
+   <div class="prompt" id="er_message"></div>
+   <input type="button" id="vote_button" value="VOTE" onclick="vote()">
+  </div>
+</div>
+</body>
+</html>
