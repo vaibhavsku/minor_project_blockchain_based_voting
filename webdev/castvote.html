@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="castvote.css">
+  </head>
+<body>
+  <script src="script1.js"></script> 
+  <div class="wrapper fadeInDown">
+    <div class="wrapper fadeInDown">
+      <div id="formContent">
+        <h2 class="active" id="heading">Cast Vote</h2>
+        <div class="fadeIn first">
+          <img src="https://img.icons8.com/external-justicon-lineal-justicon/64/000000/external-voting-voting-justicon-lineal-justicon.png" type="icon" id="page_image"/>
+          </div>
+       <p id="t1">Choose the ballot to cast your vote to</p>
+    
+       <SELECT id="ballotList">
+        <option>--SELECT--</option>
+    
+      </SELECT>
+    
+       <p id="t2">Choose the candidate from the ballot</p>
+    
+       <SELECT id="candidateList" >
+       </SELECT> 
+    
+       <p id="b_selected">Ballot selected :</p>
+    
+       <p id="c_selected">Candidate selected :</p>
+       
+       <input type="password" id="ethPrivKey" placeholder="Enter the private key of your Ethereum wallet">   
+       <div class="prompt" id="er_message"></div>
+      
+   <input type="button" id ="vote" value="VOTE" onclick="f1()">
+   <div id = "loadresult">
+    
+   </div>
+
+  </div>
+</div>
+</body>
+</html>
